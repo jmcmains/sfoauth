@@ -71,7 +71,11 @@ app.get("/oauth/callback", async (req, res) => {
         },
       }
     );
-
+  } catch (error) {
+    console.error("OAuth Error:", error?.response?.data || error.message);
+    res.status(500).send("Something went wrong during authentication.");
+  }
+  try {
     const { access_token, refresh_token, instance_url, issued_at } =
       tokenResponse.data;
 
@@ -107,9 +111,11 @@ app.get("/oauth/callback", async (req, res) => {
       email: decodedState?.email,
     });
   } catch (error) {
-    console.error("OAuth Error:", error?.response?.data || error.message);
-    res.status(500).send("Something went wrong during authentication.");
+    console.error(error.message);
+    res.status(500).send("Something went wrong during import.");
   }
+    
+
 });
 
 app.post("/generate-oauth-link", (req, res) => {
