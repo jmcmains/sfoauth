@@ -110,11 +110,9 @@ app.get("/oauth/callback", async (req, res) => {
       email: decodedState?.email,
     });
   } catch (error) {
-    console.error(error.message);
+    console.error(JSON.stringify(error));
     res.status(500).send("Something went wrong during import.");
   }
-    
-
 });
 
 app.post("/generate-oauth-link", (req, res) => {
