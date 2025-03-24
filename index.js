@@ -6,7 +6,7 @@ const pool = require("./db"); // <-- your PostgreSQL connection
 const buildSalesforceOAuthLink = require("./utils/oauthLinkBuilder");
 const app = express();
 const path = require("path");
-const { sendAuthEmail } = require("./emailService"); // make sure path is correct
+const { sendAuthEmail, sendNotificationEmail } = require("./emailService"); // make sure path is correct
 app.use(express.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -78,7 +78,7 @@ app.get("/oauth/callback", async (req, res) => {
     // Save into DB
     await pool.query(
       `INSERT INTO oauth_credentials (company_name, email, salesforce_url, access_token, refresh_token, issued_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+       VALUES ($1, $2, $3, $4, $5, $6)`,
       [
         decodedState?.companyName || null, // You'll want to pass company name via state param (or store earlier)
         decodedState?.email || null, // Same with email
@@ -94,14 +94,10 @@ app.get("/oauth/callback", async (req, res) => {
       `<h2>Thanks! Your Salesforce integration is complete. We'll begin syncing soon.</h2>`
     );
     // Send notification to you
-    const notifyOptions = {
-      from: `"Your App Notifier" <${process.env.EMAIL_USER}>`,
-      to: process.env.NOTIFY_EMAIL, // e.g., your email address
-      subject: `✅ ${company} authorized Salesforce`,
-      text: `${company} has completed Salesforce authorization.\nEmail: ${to}`,
-    };
-
-    await transporter.sendMail(notifyOptions);
+    await sendNotificationEmail({
+      company: decodedState?.companyName,
+      email: decodedState?.email,
+    });
   } catch (error) {
     console.error("OAuth Error:", error?.response?.data || error.message);
     res.status(500).send("Something went wrong during authentication.");
