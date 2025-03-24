@@ -51,11 +51,10 @@ app.get("/oauth/callback", async (req, res) => {
   if (!code) {
     return res.status(400).send("Missing OAuth code from Salesforce.");
   }
-
+  let tokenResponse;
   try {
     // Exchange code for tokens
-    console.log(decodedState.codeVerifier);
-    const tokenResponse = await axios.post(
+    tokenResponse = await axios.post(
       `${decodedState.instanceURL}/services/oauth2/token`,
       new URLSearchParams({
         grant_type: "authorization_code",
