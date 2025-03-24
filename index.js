@@ -77,7 +77,8 @@ app.get("/oauth/callback", async (req, res) => {
   try {
     const { access_token, refresh_token, instance_url, issued_at } =
       tokenResponse.data;
-
+    console.log("token response")
+    console.log(process.env.DB_HOST)
     // Save into DB
     await pool.query(
       `INSERT INTO oauth_credentials (company_name, email, salesforce_url, access_token, refresh_token, issued_at)
