@@ -16,14 +16,13 @@ app.get("/form", (req, res) => {
 });
 
 app.post("/send-auth-email", async (req, res) => {
-  const { companyName, email, instanceURL } = req.body;
+  const { companyName, email } = req.body;
 
   // TODO: store in DB or pass into your PKCE+link builder logic
   // TODO: generate Salesforce OAuth link and send email
   const oauthLink = buildSalesforceOAuthLink({
     email,
     companyName,
-    instanceURL,
   });
   console.log(oauthLink);
   try {
@@ -55,7 +54,7 @@ app.get("/oauth/callback", async (req, res) => {
   try {
     // Exchange code for tokens
     tokenResponse = await axios.post(
-      `${decodedState.instanceURL}/services/oauth2/token`,
+      `https://login.salesforce.com/services/oauth2/token`,
       new URLSearchParams({
         grant_type: "authorization_code",
         client_id: process.env.SF_CLIENT_ID,
@@ -77,8 +76,6 @@ app.get("/oauth/callback", async (req, res) => {
   try {
     const { access_token, refresh_token, instance_url, issued_at } =
       tokenResponse.data;
-    console.log("token response")
-    console.log(process.env.DB_HOST)
     // Save into DB
     await pool.query(
       `INSERT INTO oauth_credentials (company_name, email, salesforce_url, access_token, refresh_token, issued_at)
@@ -117,18 +114,17 @@ app.get("/oauth/callback", async (req, res) => {
 });
 
 app.post("/generate-oauth-link", (req, res) => {
-  const { email, companyName, instanceURL } = req.body;
+  const { email, companyName } = req.body;
 
-  if (!email || !companyName || !instanceURL) {
+  if (!email || !companyName) {
     return res
       .status(400)
-      .json({ error: "Email, Company Name, and Instance URL are required." });
+      .json({ error: "Email and Company Name are required." });
   }
 
   const oauthLink = buildSalesforceOAuthLink({
     email,
     companyName,
-    instanceURL,
   });
 
   // You can either:

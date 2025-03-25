@@ -14,13 +14,12 @@ function generateCodeChallenge() {
     return { codeVerifier, codeChallenge };
   }
 
-function buildSalesforceOAuthLink({ email, companyName, instanceURL }) {
+function buildSalesforceOAuthLink({ email, companyName }) {
     const { codeVerifier, codeChallenge } = generateCodeChallenge();
   const statePayload = Buffer.from(
     JSON.stringify({
       email,
       companyName,
-      instanceURL,
       codeVerifier  // Include the code verifier in the state for later use
     })
   ).toString("base64");

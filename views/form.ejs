@@ -1,29 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Salesforce Auth Form</title>
-  <style>
-    body { font-family: sans-serif; padding: 2rem; }
-    form { max-width: 500px; margin: auto; }
-    label { display: block; margin-top: 1rem; }
-    input { width: 100%; padding: 0.5rem; }
-    button { margin-top: 2rem; padding: 0.5rem 1rem; }
-  </style>
-</head>
-<body>
-  <h2>Authorize Your Salesforce Integration</h2>
-  <form action="/send-auth-email" method="POST">
-    <label for="companyName">Company Name:</label>
-    <input type="text" name="companyName" id="companyName" required>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Salesforce Auth Form</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 2rem;
+      }
+      form {
+        max-width: 500px;
+        margin: auto;
+      }
+      label {
+        display: block;
+        margin-top: 1rem;
+      }
+      input {
+        width: 100%;
+        padding: 0.5rem;
+      }
+      button {
+        margin-top: 2rem;
+        padding: 0.5rem 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Authorize Your Salesforce Integration</h2>
+    <form action="/send-auth-email" method="POST">
+      <label for="companyName">Company Name:</label>
+      <input type="text" name="companyName" id="companyName" required />
 
-    <label for="email">Recipient Email:</label>
-    <input type="email" name="email" id="email" required>
+      <label for="email">Recipient Email:</label>
+      <input type="email" name="email" id="email" required />
 
-    <label for="instanceURL">Salesforce Instance URL:</label>
-    <input type="text" name="instanceURL" id="instanceURL" placeholder="https://yourinstance.salesforce.com" required>
-
-    <button type="submit">Send Authorization Email</button>
-  </form>
-</body>
+      <button type="submit">Send Authorization Email</button>
+    </form>
+  </body>
 </html>
