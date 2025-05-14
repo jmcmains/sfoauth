@@ -7,12 +7,35 @@ const buildSalesforceOAuthLink = require("./utils/oauthLinkBuilder");
 const app = express();
 const path = require("path");
 const { sendAuthEmail, sendNotificationEmail } = require("./emailService"); // make sure path is correct
+const session = require("express-session");
+const passport = require("passport");
+require("./auth"); // or wherever your strategy lives
 app.use(express.urlencoded({ extended: true }));
+app.use(session({ secret: "your-secret", resave: false, saveUninitialized: false }));
+app.use(passport.initialize());
+app.use(passport.session());
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
 app.get("/form", (req, res) => {
+  if (!req.isAuthenticated()) return res.redirect("/auth/google");
   res.render("form"); // if you're using EJS and put the file in views/form.ejs
+});
+
+// Auth Routes
+app.get("/auth/google",
+  passport.authenticate("google", { scope: ["profile", "email"] }));
+
+app.get("/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/login" }),
+  (req, res) => {
+    res.redirect("/form");
+  });
+
+app.get("/logout", (req, res) => {
+  req.logout(() => {
+    res.redirect("/"); // or redirect to login or home page
+  });
 });
 
 app.post("/send-auth-email", async (req, res) => {
@@ -131,6 +154,10 @@ app.post("/generate-oauth-link", (req, res) => {
   // - Return it as a response
   // - Or pass it into your email sender function
   res.json({ oauthLink });
+});
+
+app.get("/", (req, res) => {
+  res.render("login"); // This renders login.ejs
 });
 
 const PORT = process.env.PORT || 3000;
