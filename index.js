@@ -8,10 +8,19 @@ const app = express();
 const path = require("path");
 const { sendAuthEmail, sendNotificationEmail } = require("./emailService"); // make sure path is correct
 const session = require("express-session");
+const FileStore = require("session-file-store")(session);
 const passport = require("passport");
 require("./auth"); // or wherever your strategy lives
 app.use(express.urlencoded({ extended: true }));
-app.use(session({ secret: "your-secret", resave: false, saveUninitialized: false }));
+app.use(session({
+  store: new FileStore({}),
+  secret: "your-secret", 
+  resave: false, 
+  saveUninitialized: false,
+  cookie: {
+      maxAge: 1000 * 60 * 60 * 24, // 1 day
+  },
+}));
 app.use(passport.initialize());
 app.use(passport.session());
 app.set("view engine", "ejs");
