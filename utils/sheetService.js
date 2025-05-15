@@ -1,6 +1,5 @@
 const { google } = require("googleapis");
 const path = require("path");
-const credentials = require("./service-account.json");
 require("dotenv").config();
 
 const SPREADSHEET_ID = "1qjlx1kuJL3rWVQvkYKBhzEB_w0waab2TiL_PZNtD6kc"; // from the URL
