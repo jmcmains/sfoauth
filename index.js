@@ -115,7 +115,7 @@ app.get("/oauth/callback", async (req, res) => {
     
     await upsertOAuthCredential({
       company_name: decodedState?.companyName || null, // You'll want to pass company name via state param (or store earlier)
-      emial: decodedState?.email || null, // Same with email
+      email: decodedState?.email || null, // Same with email
       salesforce_url: instance_url,
       access_token,
       refresh_token,
