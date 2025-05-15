@@ -100,5 +100,4 @@ async function upsertOAuthCredential(data) {
   }
 }
 
-
 module.exports = { upsertOAuthCredential };
