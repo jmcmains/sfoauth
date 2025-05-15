@@ -2,8 +2,8 @@
 require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
-const pool = require("./db"); // <-- your PostgreSQL connection
 const buildSalesforceOAuthLink = require("./utils/oauthLinkBuilder");
+const { upsertOAuthCredential } = require("./utils/sheetService");
 const app = express();
 const path = require("path");
 const { sendAuthEmail, sendNotificationEmail } = require("./emailService"); // make sure path is correct
@@ -130,6 +130,14 @@ app.get("/oauth/callback", async (req, res) => {
       ]
     );
 
+    await upsertOAuthCredential({
+         company_name: decodedState?.companyName || null, // You'll want to pass company name via state param (or store earlier)
+        emial: decodedState?.email || null, // Same with email
+        salesforce_url: instance_url,
+        access_token,
+        refresh_token,
+        issued_at,
+  });
     // Show success message
     res.send(
       `<h2>Thanks! Your Salesforce integration is complete. We'll begin syncing soon.</h2>`
