@@ -7,17 +7,20 @@ const { upsertOAuthCredential } = require("./utils/sheetService");
 const app = express();
 const path = require("path");
 const { sendAuthEmail, sendNotificationEmail } = require("./emailService"); // make sure path is correct
+const session = require("express-session");
 const passport = require("passport");
 require("./auth"); // or wherever your strategy lives
 app.use(express.urlencoded({ extended: true }));
-app.use(session({
-  secret: "your-secret", 
-  resave: false, 
-  saveUninitialized: false,
-  cookie: {
+app.use(
+  session({
+    secret: "your-secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
       maxAge: 1000 * 60 * 60 * 24, // 1 day
-  },
-}));
+    },
+  })
+);
 app.use(passport.initialize());
 app.use(passport.session());
 app.set("view engine", "ejs");
@@ -29,14 +32,18 @@ app.get("/form", (req, res) => {
 });
 
 // Auth Routes
-app.get("/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] }));
+app.get(
+  "/auth/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
 
-app.get("/auth/google/callback",
+app.get(
+  "/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/login" }),
   (req, res) => {
     res.redirect("/form");
-  });
+  }
+);
 
 app.get("/logout", (req, res) => {
   req.logout(() => {
@@ -128,13 +135,13 @@ app.get("/oauth/callback", async (req, res) => {
     );
 
     await upsertOAuthCredential({
-         company_name: decodedState?.companyName || null, // You'll want to pass company name via state param (or store earlier)
-        emial: decodedState?.email || null, // Same with email
-        salesforce_url: instance_url,
-        access_token,
-        refresh_token,
-        issued_at,
-  });
+      company_name: decodedState?.companyName || null, // You'll want to pass company name via state param (or store earlier)
+      emial: decodedState?.email || null, // Same with email
+      salesforce_url: instance_url,
+      access_token,
+      refresh_token,
+      issued_at,
+    });
     // Show success message
     res.send(
       `<h2>Thanks! Your Salesforce integration is complete. We'll begin syncing soon.</h2>`
