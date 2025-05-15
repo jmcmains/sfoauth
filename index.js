@@ -112,28 +112,7 @@ app.get("/oauth/callback", async (req, res) => {
   try {
     const { access_token, refresh_token, instance_url, issued_at } =
       tokenResponse.data;
-    // Save into DB
-    await pool.query(
-      `INSERT INTO oauth_credentials (company_name, email, salesforce_url, access_token, refresh_token, issued_at)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (salesforce_url)
-       DO UPDATE SET
-        company_name = EXCLUDED.company_name,
-        email = EXCLUDED.email,
-        access_token = EXCLUDED.access_token,
-        refresh_token = EXCLUDED.refresh_token,
-        issued_at = EXCLUDED.issued_at,
-        updated_at = CURRENT_TIMESTAMP`,
-      [
-        decodedState?.companyName || null, // You'll want to pass company name via state param (or store earlier)
-        decodedState?.email || null, // Same with email
-        instance_url,
-        access_token,
-        refresh_token,
-        issued_at,
-      ]
-    );
-
+    
     await upsertOAuthCredential({
       company_name: decodedState?.companyName || null, // You'll want to pass company name via state param (or store earlier)
       emial: decodedState?.email || null, // Same with email
