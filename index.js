@@ -83,7 +83,7 @@ app.post("/send-auth-email", async (req, res) => {
 });
 
 // Oauth callback for Zoho
-app.get("oauth/zoho/callback", async (req, res) => {
+app.get("/oauth/zoho/callback", async (req, res) => {
   const { code, location, accounts_server } = req.query;
 
   if (!code || !location || !accounts_server) {
