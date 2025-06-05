@@ -84,7 +84,8 @@ app.post("/send-auth-email", async (req, res) => {
 
 // Oauth callback for Zoho
 app.get("/oauth/zoho/callback", async (req, res) => {
-  const { code, location, accounts_server } = req.query;
+  const { code, location } = req.query;
+  const accounts_server = req.query['accounts-server'];
 
   if (!code || !location || !accounts_server) {
     return res.status(400).send("Missing required OAuth parameters.");
