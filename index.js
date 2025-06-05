@@ -86,12 +86,12 @@ app.post("/send-auth-email", async (req, res) => {
 app.get("/oauth/zoho/callback", async (req, res) => {
   const { code, location } = req.query;
   const accounts_server = req.query['accounts-server'];
-
+  var tokenResponse;
   if (!code || !location || !accounts_server) {
     return res.status(400).send("Missing required OAuth parameters.");
   }
   try {
-   const tokenResponse = await axios.post(
+   tokenResponse = await axios.post(
       `${accounts_server}/oauth/v2/token`,
       new URLSearchParams({
         code,
@@ -104,7 +104,11 @@ app.get("/oauth/zoho/callback", async (req, res) => {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       }
     );
-
+  } catch (error) {
+    console.error(JSON.stringify(error));
+    res.status(500).send("Something went wrong getting the token.");
+  }
+  try {
     const {
       access_token,
       refresh_token,
