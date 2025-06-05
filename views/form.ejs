@@ -20,6 +20,10 @@
         width: 100%;
         padding: 0.5rem;
       }
+      select {
+        width: 100%;
+        padding: 0.5rem;
+      }
       button {
         margin-top: 2rem;
         padding: 0.5rem 1rem;
@@ -27,14 +31,18 @@
     </style>
   </head>
   <body>
-    <h2>Authorize Your Salesforce Integration</h2>
+    <h2>Authorize Your CRN Integration</h2>
     <form action="/send-auth-email" method="POST">
       <label for="companyName">Company Name:</label>
       <input type="text" name="companyName" id="companyName" required />
 
       <label for="email">Recipient Email:</label>
       <input type="email" name="email" id="email" required />
-
+      <label for="crmType">CRM Type:</label>
+      <select name="crmType" required>
+        <option value="salesforce">Salesforce</option>
+        <option value="zoho">Zoho</option>
+      </select>
       <button type="submit">Send Authorization Email</button>
     </form>
     <a href="/logout">Logout</a>

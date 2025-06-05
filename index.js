@@ -2,7 +2,7 @@
 require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
-const buildSalesforceOAuthLink = require("./utils/oauthLinkBuilder");
+const {buildZohoOAuthLink, buildSalesforceOAuthLink} = require("./utils/oauthLinkBuilder");
 const { upsertOAuthCredential } = require("./utils/sheetService");
 const app = express();
 const path = require("path");
@@ -52,20 +52,26 @@ app.get("/logout", (req, res) => {
 });
 
 app.post("/send-auth-email", async (req, res) => {
-  const { companyName, email } = req.body;
+  const { companyName, email, crmType } = req.body;
 
   // TODO: store in DB or pass into your PKCE+link builder logic
   // TODO: generate Salesforce OAuth link and send email
-  const oauthLink = buildSalesforceOAuthLink({
-    email,
-    companyName,
-  });
+  var oauthLink
+  if (crmType == "salesforce") {
+    oauthLink = buildSalesforceOAuthLink({
+      email,
+      companyName,
+    });
+  } else if (crmType == "zoho") {
+    oauthLink = buildZohoOAuthLink();
+  }
   console.log(oauthLink);
   try {
     await sendAuthEmail({
       to: email,
       company: companyName,
       authUrl: oauthLink,
+      crmType
     });
     res.send(
       `<p>Email sent to ${email}. They will need to click the link and authorize the app.</p>`
@@ -74,6 +80,65 @@ app.post("/send-auth-email", async (req, res) => {
     console.error(err);
     res.status(500).send("Failed to send email");
   }
+});
+
+// Oauth callback for Zoho
+app.get("oauth/zoho/callback", async (req, res) => {
+  const { code, location, accounts_server } = req.query;
+
+  if (!code || !location || !accounts_server) {
+    return res.status(400).send("Missing required OAuth parameters.");
+  }
+  try {
+   const tokenResponse = await axios.post(
+      `${accounts_server}/oauth/v2/token`,
+      new URLSearchParams({
+        code,
+        client_id: process.env.ZH_CLIENT_ID,
+        client_secret: process.env.ZH_CLIENT_SECRET,
+        redirect_uri: process.env.ZH_REDIRECT_URI,
+        grant_type: "authorization_code",
+      }),
+      {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      }
+    );
+
+    const {
+      access_token,
+      refresh_token,
+      api_domain,
+      token_type,
+      expires_in
+    } = tokenResponse.data;
+
+    // Replace this with your preferred storage logic (e.g., Google Sheets)
+    await upsertZohoOAuthCredential({
+      access_token,
+      refresh_token,
+      location,
+      accounts_server,
+      api_domain,
+      token_type,
+      expires_in,
+      issued_at: new Date().toISOString(),
+    });
+
+    // Show success message
+    res.send(
+      `<h2>Thanks! Your Zoho integration is complete. We'll begin syncing soon.</h2>`
+    );
+    // Send notification to you
+    await sendNotificationEmail({
+      company: decodedState?.companyName,
+      email: decodedState?.email,
+      crmType: "Zoho"
+    });
+  } catch (error) {
+    console.error(JSON.stringify(error));
+    res.status(500).send("Something went wrong during import.");
+  }
+  
 });
 
 // OAuth callback route
@@ -129,6 +194,7 @@ app.get("/oauth/callback", async (req, res) => {
     await sendNotificationEmail({
       company: decodedState?.companyName,
       email: decodedState?.email,
+      crmType: "Salesforce"
     });
   } catch (error) {
     console.error(JSON.stringify(error));

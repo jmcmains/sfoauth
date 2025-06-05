@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const sendAuthEmail = async ({ to, company, authUrl }) => {
+const sendAuthEmail = async ({ to, company, authUrl,crmType }) => {
   // Load HTML file
   const templatePath = path.join(__dirname, "views", "email.ejs");
 
@@ -19,24 +19,25 @@ const sendAuthEmail = async ({ to, company, authUrl }) => {
   const html = await ejs.renderFile(templatePath, {
     company,
     authUrl,
+    crmType
   });
   const mailOptions = {
     from: `"Your Company Name" <${process.env.EMAIL_USER}>`,
     to,
-    subject: `Salesforce Authorization for ${company}`,
+    subject: `${crmType} Authorization for ${company}`,
     html,
   };
 
   return transporter.sendMail(mailOptions);
 };
 
-const sendNotificationEmail = async ({ company, email }) => {
+const sendNotificationEmail = async ({ company, email, crmType }) => {
   // Load HTML file
   const notifyOptions = {
     from: `"Your App Notifier" <${process.env.EMAIL_USER}>`,
     to: process.env.NOTIFY_EMAIL, // e.g., your email address
-    subject: `✅ ${company} authorized Salesforce`,
-    text: `${company} has completed Salesforce authorization.\nEmail: ${email}`,
+    subject: `✅ ${company} authorized ${crmType}`,
+    text: `${company} has completed ${crmType} authorization.\nEmail: ${email}`,
   };
 
   return transporter.sendMail(notifyOptions);
