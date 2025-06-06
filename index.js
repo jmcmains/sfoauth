@@ -3,7 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
 const {buildZohoOAuthLink, buildSalesforceOAuthLink} = require("./utils/oauthLinkBuilder");
-const { upsertOAuthCredential } = require("./utils/sheetService");
+const { upsertOAuthCredential, upsertZohoOAuthCredential } = require("./utils/sheetService");
 const app = express();
 const path = require("path");
 const { sendAuthEmail, sendNotificationEmail } = require("./emailService"); // make sure path is correct
@@ -63,7 +63,10 @@ app.post("/send-auth-email", async (req, res) => {
       companyName,
     });
   } else if (crmType == "zoho") {
-    oauthLink = buildZohoOAuthLink();
+    oauthLink = buildZohoOAuthLink({
+      email,
+      companyName,
+    });
   }
   console.log(oauthLink);
   try {
@@ -91,15 +94,17 @@ app.get("/oauth/zoho/callback", async (req, res) => {
     return res.status(400).send("Missing required OAuth parameters.");
   }
   try {
-   tokenResponse = await axios.post(
-      `${accounts_server}/oauth/v2/token`,
-      new URLSearchParams({
-        code,
+   var params = new URLSearchParams({
+        grant_type: "authorization_code",
         client_id: process.env.ZH_CLIENT_ID,
         client_secret: process.env.ZH_CLIENT_SECRET,
         redirect_uri: process.env.ZH_REDIRECT_URI,
-        grant_type: "authorization_code",
-      }),
+        code
+      })
+    console.log("Params:", params);
+   tokenResponse = await axios.post(
+      `${accounts_server}/oauth/v2/token`,
+      params.toString(),
       {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       }
@@ -112,11 +117,12 @@ app.get("/oauth/zoho/callback", async (req, res) => {
     const {
       access_token,
       refresh_token,
+      scope,
       api_domain,
       token_type,
       expires_in
     } = tokenResponse.data;
-
+    console.log("Token response:", tokenResponse.data);
     // Replace this with your preferred storage logic (e.g., Google Sheets)
     await upsertZohoOAuthCredential({
       access_token,
@@ -126,17 +132,15 @@ app.get("/oauth/zoho/callback", async (req, res) => {
       api_domain,
       token_type,
       expires_in,
+      scope,
       issued_at: new Date().toISOString(),
     });
-
     // Show success message
     res.send(
       `<h2>Thanks! Your Zoho integration is complete. We'll begin syncing soon.</h2>`
     );
     // Send notification to you
     await sendNotificationEmail({
-      company: decodedState?.companyName,
-      email: decodedState?.email,
       crmType: "Zoho"
     });
   } catch (error) {

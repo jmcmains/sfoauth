@@ -31,7 +31,7 @@ const sendAuthEmail = async ({ to, company, authUrl,crmType }) => {
   return transporter.sendMail(mailOptions);
 };
 
-const sendNotificationEmail = async ({ company, email, crmType }) => {
+const sendNotificationEmail = async ({ company ='', email = '', crmType }) => {
   // Load HTML file
   const notifyOptions = {
     from: `"Your App Notifier" <${process.env.EMAIL_USER}>`,

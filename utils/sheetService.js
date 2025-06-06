@@ -10,6 +10,7 @@ const auth = new google.auth.GoogleAuth({
   scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
 async function upsertZohoOAuthCredential(data) {
+  console.log("Upserting Zoho OAuth credential:", data);
   const authClient = await auth.getClient();
   const sheets = google.sheets({ version: "v4", auth: authClient });
   const {
@@ -18,6 +19,7 @@ async function upsertZohoOAuthCredential(data) {
       location,
       accounts_server,
       api_domain,
+      scope,
       token_type,
       expires_in,
       issued_at
@@ -31,43 +33,6 @@ async function upsertZohoOAuthCredential(data) {
 
   const rows = res.data.values || [];
 
-  // Find existing row by salesforce_url
-  const existingIndex = rows.findIndex((row) => row[3] === salesforce_url);
-
-  if (existingIndex !== -1) {
-    // Update existing
-    const existingRow = rows[existingIndex];
-    const id = existingRow[0];
-    const created_at = existingRow[6] || now; // Preserve created_at if exists
-    const rowNumber = existingIndex + 2;
-
-    const updatedRow = [
-      id,
-      access_token,
-      refresh_token,
-      location,
-      accounts_server,
-      api_domain,
-      token_type,
-      expires_in,
-      issued_at,
-      created_at,
-      now, // updated_at
-    ];
-
-    const range = `zoho_oauth_credentials!A${rowNumber}:I${rowNumber}`;
-
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
-      range,
-      valueInputOption: "RAW",
-      requestBody: {
-        values: [updatedRow],
-      },
-    });
-
-    console.log("✅ Updated existing row.");
-  } else {
     // Insert new
     const maxId = rows.reduce((max, row) => {
       const id = parseInt(row[0]);
@@ -80,6 +45,7 @@ async function upsertZohoOAuthCredential(data) {
       newId,
       access_token,
       refresh_token,
+      scope,
       location,
       accounts_server,
       api_domain,
@@ -101,7 +67,6 @@ async function upsertZohoOAuthCredential(data) {
 
     console.log("✅ Inserted new row with ID:", newId);
   }
-}
 
 async function upsertOAuthCredential(data) {
   const authClient = await auth.getClient();
@@ -193,4 +158,4 @@ async function upsertOAuthCredential(data) {
   }
 }
 
-module.exports = { upsertOAuthCredential };
+module.exports = { upsertOAuthCredential,upsertZohoOAuthCredential };

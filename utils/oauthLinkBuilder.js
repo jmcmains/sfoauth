@@ -13,13 +13,13 @@ function generateCodeChallenge() {
 
   return { codeVerifier, codeChallenge };
 }
-function buildZohoOAuthLink(domain) {
+function buildZohoOAuthLink() {
   const params = new URLSearchParams({
     scope: "ZohoCRM.modules.ALL",
     client_id: process.env.ZH_CLIENT_ID,
     redirect_uri: process.env.ZH_REDIRECT_URI,
     response_type: "code",
-    access_type: "offline",
+    access_type: "offline"
   });
 
   return `https://accounts.zoho.com/oauth/v2/auth?${params.toString()}`;
