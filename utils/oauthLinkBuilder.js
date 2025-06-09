@@ -47,7 +47,30 @@ function buildSalesforceOAuthLink({ email, companyName }) {
   return `https://login.salesforce.com/services/oauth2/authorize?${params.toString()}`;
 }
 
+function buildSalesforceStagingOAuthLink({ email, companyName }) {
+  const { codeVerifier, codeChallenge } = generateCodeChallenge();
+  const statePayload = Buffer.from(
+    JSON.stringify({
+      email,
+      companyName,
+      codeVerifier, // Include the code verifier in the state for later use
+    })
+  ).toString("base64");
+
+  const params = new URLSearchParams({
+    response_type: "code",
+    client_id: process.env.SF_CLIENT_ID,
+    redirect_uri: process.env.SF_REDIRECT_URI,
+    state: statePayload,
+    code_challenge: codeChallenge,
+    code_challenge_method: "S256",
+  });
+
+  return `https://test.salesforce.com/services/oauth2/authorize?${params.toString()}`;
+}
+
 module.exports = {
   buildSalesforceOAuthLink,
   buildZohoOAuthLink,
+  buildSalesforceStagingOAuthLink
 };

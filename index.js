@@ -2,7 +2,7 @@
 require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
-const {buildZohoOAuthLink, buildSalesforceOAuthLink} = require("./utils/oauthLinkBuilder");
+const {buildZohoOAuthLink, buildSalesforceOAuthLink, buildSalesforceStagingOAuthLink} = require("./utils/oauthLinkBuilder");
 const { upsertOAuthCredential, upsertZohoOAuthCredential } = require("./utils/sheetService");
 const app = express();
 const path = require("path");
@@ -59,6 +59,11 @@ app.post("/send-auth-email", async (req, res) => {
   var oauthLink
   if (crmType == "salesforce") {
     oauthLink = buildSalesforceOAuthLink({
+      email,
+      companyName,
+    });
+  } else if (crmType == "salesforceStaging") {
+    oauthLink = buildSalesforceStagingOAuthLink({
       email,
       companyName,
     });
@@ -211,24 +216,65 @@ app.get("/oauth/callback", async (req, res) => {
   }
 });
 
-app.post("/generate-oauth-link", (req, res) => {
-  const { email, companyName } = req.body;
+// OAuth callback route
+app.get("/oauth/staging/callback", async (req, res) => {
+  const { code, state } = req.query;
+  const decodedState = JSON.parse(
+    Buffer.from(state, "base64").toString("utf-8")
+  );
 
-  if (!email || !companyName) {
-    return res
-      .status(400)
-      .json({ error: "Email and Company Name are required." });
+  if (!code) {
+    return res.status(400).send("Missing OAuth code from Salesforce.");
   }
-
-  const oauthLink = buildSalesforceOAuthLink({
-    email,
-    companyName,
-  });
-
-  // You can either:
-  // - Return it as a response
-  // - Or pass it into your email sender function
-  res.json({ oauthLink });
+  let tokenResponse;
+  try {
+    // Exchange code for tokens
+    tokenResponse = await axios.post(
+      `https://test.salesforce.com/services/oauth2/token`,
+      new URLSearchParams({
+        grant_type: "authorization_code",
+        client_id: process.env.SF_CLIENT_ID,
+        client_secret: process.env.SF_CLIENT_SECRET,
+        redirect_uri: process.env.SF_REDIRECT_URI,
+        code: code,
+        code_verifier: decodedState?.codeVerifier,
+      }),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+  } catch (error) {
+    console.error("OAuth Error:", error?.response?.data || error.message);
+    res.status(500).send("Something went wrong during authentication.");
+  }
+  try {
+    const { access_token, refresh_token, instance_url, issued_at } =
+      tokenResponse.data;
+    
+    await upsertOAuthCredential({
+      company_name: decodedState?.companyName || null, // You'll want to pass company name via state param (or store earlier)
+      email: decodedState?.email || null, // Same with email
+      salesforce_url: instance_url,
+      access_token,
+      refresh_token,
+      issued_at,
+    });
+    // Show success message
+    res.send(
+      `<h2>Thanks! Your Salesforce integration is complete. We'll begin syncing soon.</h2>`
+    );
+    // Send notification to you
+    await sendNotificationEmail({
+      company: decodedState?.companyName,
+      email: decodedState?.email,
+      crmType: "Salesforce Staging"
+    });
+  } catch (error) {
+    console.error(JSON.stringify(error));
+    res.status(500).send("Something went wrong during import.");
+  }
 });
 
 app.get("/", (req, res) => {
