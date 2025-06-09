@@ -60,7 +60,7 @@ function buildSalesforceStagingOAuthLink({ email, companyName }) {
   const params = new URLSearchParams({
     response_type: "code",
     client_id: process.env.SF_CLIENT_ID,
-    redirect_uri: process.env.SF_REDIRECT_URI,
+    redirect_uri: process.env.SF_STAGING_REDIRECT_URI,
     state: statePayload,
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
