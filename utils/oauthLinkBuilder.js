@@ -44,7 +44,7 @@ function buildSalesforceOAuthLink({ email, companyName }) {
     code_challenge_method: "S256",
   });
 
-  return `https://accounts.zoho.com/oauth/v2/auth?${params.toString()}`;
+  return `https://login.salesforce.com/services/oauth2/authorize?${params.toString()}`;
 }
 
 module.exports = {
