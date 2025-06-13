@@ -268,7 +268,7 @@ app.get("/oauth/callback", async (req, res) => {
     });
     // Show success message
     res.send(
-      `<h2>Thanks! Your Salesforce integration is complete. We'll begin syncing soon.</h2>`
+      `<h2>Thanks! Your CRM integration is complete. We'll begin syncing soon.</h2>`
     );
     // Send notification to you
     await sendNotificationEmail({
