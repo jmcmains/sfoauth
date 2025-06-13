@@ -2,8 +2,8 @@
 require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
-const {buildZohoOAuthLink, buildSalesforceOAuthLink, buildSalesforceStagingOAuthLink} = require("./utils/oauthLinkBuilder");
-const { upsertOAuthCredential, upsertZohoOAuthCredential } = require("./utils/sheetService");
+const {buildZohoOAuthLink, buildSalesforceOAuthLink, buildSalesforceStagingOAuthLink, buildJobberOAuthLink} = require("./utils/oauthLinkBuilder");
+const { upsertOAuthCredential, upsertZohoOAuthCredential,upsertCredential } = require("./utils/sheetService");
 const app = express();
 const path = require("path");
 const { sendAuthEmail, sendNotificationEmail } = require("./emailService"); // make sure path is correct
@@ -69,6 +69,11 @@ app.post("/send-auth-email", async (req, res) => {
     });
   } else if (crmType == "zoho") {
     oauthLink = buildZohoOAuthLink({
+      email,
+      companyName,
+    });
+  }else if (crmType == "jobber") {
+    oauthLink = buildJobberOAuthLink({
       email,
       companyName,
     });
@@ -154,6 +159,67 @@ app.get("/oauth/zoho/callback", async (req, res) => {
   }
   
 });
+
+// OAuth callback route
+app.get("/oauth/jobber/callback", async (req, res) => {
+  const { code, state } = req.query;
+  const decodedState = JSON.parse(
+    Buffer.from(state, "base64").toString("utf-8")
+  );
+
+  if (!code) {
+    return res.status(400).send("Missing OAuth code from Jobber.");
+  }
+  let tokenResponse;
+  try {
+    // Exchange code for tokens
+    tokenResponse = await axios.post(
+      `https://api.getjobber.com/api/oauth/token`,
+      new URLSearchParams({
+        grant_type: "authorization_code",
+        client_id: process.env.JOBBER_CLIENT_ID,
+        client_secret: process.env.JOBBER_CLIENT_SECRET,
+        redirect_uri: process.env.JOBBER_REDIRECT_URI,
+        code: code
+      }),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+  } catch (error) {
+    console.error("OAuth Error:", error?.response?.data || error.message);
+    res.status(500).send("Something went wrong during authentication.");
+  }
+  try {
+    const { access_token, refresh_token } =
+      tokenResponse.data;
+    
+    await upsertCredential([
+      decodedState?.companyName || null, // You'll want to pass company name via state param (or store earlier)
+      decodedState?.email || null, // Same with email
+      access_token,
+      refresh_token,
+      new Date().toISOString(),
+      new Date().toISOString()
+    ], "jobber_oauth_credentials");
+    // Show success message
+    res.send(
+      `<h2>Thanks! Your Salesforce integration is complete. We'll begin syncing soon.</h2>`
+    );
+    // Send notification to you
+    await sendNotificationEmail({
+      company: decodedState?.companyName,
+      email: decodedState?.email,
+      crmType: "Jobber"
+    });
+  } catch (error) {
+    console.error(JSON.stringify(error));
+    res.status(500).send("Something went wrong during import.");
+  }
+});
+
 
 // OAuth callback route
 app.get("/oauth/callback", async (req, res) => {

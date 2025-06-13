@@ -158,4 +158,31 @@ async function upsertOAuthCredential(data) {
   }
 }
 
-module.exports = { upsertOAuthCredential,upsertZohoOAuthCredential };
+async function upsertCredential(row, sheet) {
+  const authClient = await auth.getClient();
+  const sheets = google.sheets({ version: "v4", auth: authClient });
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: sheet
+  });
+  const rows = res.data.values || [];
+  const maxId = rows.reduce((max, row) => {
+    const id = parseInt(row[0]);
+    return isNaN(id) ? max : Math.max(max, id);
+  }, 0);
+  const newId = maxId + 1;
+  const newRow = [newId, ...row];
+  await sheets.spreadsheets.values.append({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${sheet}!A:I`,
+      valueInputOption: "RAW",
+      requestBody: {
+        values: [newRow],
+      },
+    });
+
+    console.log("✅ Inserted new row with ID:", newId);
+}
+
+
+module.exports = { upsertOAuthCredential,upsertZohoOAuthCredential,upsertCredential };

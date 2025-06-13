@@ -25,6 +25,24 @@ function buildZohoOAuthLink() {
   return `https://accounts.zoho.com/oauth/v2/auth?${params.toString()}`;
 }
 
+function buildJobberOAuthLink({ email, companyName }) {
+  const statePayload = Buffer.from(
+    JSON.stringify({
+      email,
+      companyName,
+    })
+  ).toString("base64");
+
+  const params = new URLSearchParams({
+    response_type: "code",
+    client_id: process.env.JOBBER_CLIENT_ID,
+    redirect_uri: process.env.JOBBER_REDIRECT_URI,
+    state: statePayload
+  });
+
+  return `https://api.getjobber.com/api/oauth/authorize?${params.toString()}`;
+}
+
 function buildSalesforceOAuthLink({ email, companyName }) {
   const { codeVerifier, codeChallenge } = generateCodeChallenge();
   const statePayload = Buffer.from(
@@ -72,5 +90,6 @@ function buildSalesforceStagingOAuthLink({ email, companyName }) {
 module.exports = {
   buildSalesforceOAuthLink,
   buildZohoOAuthLink,
-  buildSalesforceStagingOAuthLink
+  buildSalesforceStagingOAuthLink,
+  buildJobberOAuthLink
 };
